@@ -353,6 +353,7 @@ function Get-SystemSpecs {
 # -----------------------------
 function Choose-macOS {
     param([string]$cpuName, [string]$gpus)
+    # Предполагается, что Write-Status определена где-то еще
     Write-Status "[CHOICE] Выбор версии macOS (подбор на основе CPU/GPU)..." Cyan
 
     $all = @{
@@ -368,7 +369,9 @@ function Choose-macOS {
     $supported = $all.Keys
 
     if ($cpuName -match "AMD") {
+        # Определяем рекомендованные (более стабильные) версии для AMD
         $recommendedKeys = @("10.15","11","12")
+        # Предполагается, что Write-Status определена где-то еще
         Write-Status "[WARN] Обнаружен AMD процессор." Yellow
         Write-Status "[WARN] Для максимальной стабильности рекомендуется выбрать версии: $($recommendedKeys -join ', ')." Yellow
         Write-Status "[WARN] Новые версии могут работать, но требуют дополнительных патчей и более сложной настройки." Yellow
@@ -378,12 +381,12 @@ function Choose-macOS {
     foreach ($k in $supported) {
         $m = $all[$k]
         $tag = ""
+        # Добавляем метку "Рекомендовано" для AMD, если эта версия входит в рекомендованные
         if ($cpuName -match "AMD" -and $recommendedKeys -contains $k) {
              $tag = " [РЕКОМЕНДОВАНО AMD]"
         }
         
-        # ИСПРАВЛЕНИЕ ОШИБКИ:
-        # {2} используется для $tag. Требования сдвигаются на {3}, {4}, {5}, {6}.
+        # ИСПРАВЛЕНИЕ ОШИБКИ: Плейсхолдер {2} для $tag, далее {3} до {6}.
         Write-Host ("[{0}] {1}{2} — minRAM {3}GB, recRAM {4}GB, recCores {5}, disk {6}GB" -f $i, $m.name, $tag, $m.minRam, $m.recRam, $m.recCores, $m.disk)
         
         $menu += $k
@@ -391,11 +394,13 @@ function Choose-macOS {
     }
 
     $sel = Read-Host "Введите номер версии (например 0)"
+    # Предполагается, что Abort определена где-то еще
     if (-not ([int]::TryParse($sel,[ref]$null))) { Abort "Неправильный ввод." }
     $sel = [int]$sel
     if ($sel -lt 0 -or $sel -ge $menu.Count) { Abort "Индекс вне диапазона." }
     $ver = $menu[$sel]
     $meta = $all[$ver]
+    # Предполагается, что Write-Status определена где-то еще
     Write-Status "Выбрано: $($meta.name)" Green
     return @{ Version = $ver; Meta = $meta }
 }
