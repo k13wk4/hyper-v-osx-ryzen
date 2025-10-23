@@ -453,29 +453,13 @@ function Build-OSXHyperV {
 # Создание VM
 # -----------------------------
 function Create-VMFromDist {
-    # --- ИЗМЕНЕНИЕ ---
-    # Добавлен параметр [string]$Name, чтобы функция могла принять уникальное имя.
-    param(
-        [string]$repoPath, 
-        [string]$version, 
-        [int]$cores, 
-        [int]$ram, 
-        [int]$disk,
-        [string]$Name  # <--- Вот новый параметр
-    )
-    # --- КОНЕЦ ИЗМЕНЕНИЯ ---
-
+    param([string]$repoPath, [string]$version, [int]$cores, [int]$ram, [int]$disk)
     Write-Status "[VM] Создание VM через dist/Scripts..." Cyan
     $scriptPath = Join-Path -Path $repoPath -ChildPath "dist\Scripts\create-virtual-machine.ps1"
     if (-not (Test-Path $scriptPath)) { Abort "create-virtual-machine.ps1 не найден. Убедитесь, что build.ps1 создал dist/Scripts." }
 
-    # --- ИЗМЕНЕНИЕ ---
-    # Теперь используется переменная $Name, переданная в функцию,
-    # а не жёстко заданное "macOS_$version".
-    Write-Status "Запускаем: $scriptPath -Name '$Name' -Version $version -CPU $cores -RAM $ram -Size $disk" Yellow
-    & $scriptPath -Name $Name -Version $version -CPU $cores -RAM $ram -Size $disk 2>&1 | ForEach-Object { Log $_ }
-    # --- КОНЕЦ ИЗМЕНЕНИЯ ---
-
+    Write-Status "Запускаем: $scriptPath -Name macOS_$version -Version $version -CPU $cores -RAM $ram -Size $disk" Yellow
+    & $scriptPath -Name ("macOS_$version") -Version $version -CPU $cores -RAM $ram -Size $disk 2>&1 | ForEach-Object { Log $_ }
     Write-Status "Команда создания VM завершена (проверьте Hyper-V Manager)." Green
 }
 
