@@ -542,11 +542,19 @@ try {
     Write-Status "Установка завершена (или инициирована). Проверьте Hyper-V Manager для запуска VM." Green
     Log "=== FINISH SUCCESS ==="
     Write-Status "Лог: $Global:LogPath" Yellow
-    exit 0
-
+    # !!! ИСПРАВЛЕНИЕ ДЛЯ УДЕРЖАНИЯ ОКНА !!!
+    # Вместо exit 0:
+    Write-Host "`nНажмите Enter для закрытия окна..." -ForegroundColor Green
+    Read-Host | Out-Null
+    # exit 0 # Удаляем exit, чтобы окно не закрывалось
 } catch {
     Log "Unhandled exception: $($_.Exception | Out-String)"
     Write-Status "Скрипт завершился с ошибкой: $($_.Exception.Message)" Red
     Write-Status "См. лог: $Global:LogPath" Yellow
-    exit 1
+    
+    # !!! ИСПРАВЛЕНИЕ ДЛЯ УДЕРЖАНИЯ ОКНА ПРИ ОШИБКЕ !!!
+    # Вместо exit 1:
+    Write-Host "`nНажмите Enter для закрытия окна..." -ForegroundColor Red
+    Read-Host | Out-Null
+    # exit 1 # Удаляем exit, чтобы окно не закрывалось
 }
