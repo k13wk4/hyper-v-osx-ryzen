@@ -4,27 +4,55 @@
 
 # --- Section 1: System Checks and Hyper-V Activation ---
 function Check-HyperV {
-    Write-Host "[1/6] Проверка поддержки Hyper-V..."
-    $osSKU = (Get-CimInstance Win32_OperatingSystem).OperatingSystemSKU
-    if ($osSKU -in 100,101,121) {
-        Write-Error "Ваша версия Windows (Home) не поддерживает Hyper-V."
-        exit 1
+    Write-Host "[1/6] Проверка поддержки Hyper-V..." -ForegroundColor Cyan
+    try {
+        $logPath = "C:\\macos_setup_log.txt"
+        "=== Проверка Hyper-V === $(Get-Date)" | Out-File $logPath -Append
+
+        # Проверка версии Windows
+        $osSKU = (Get-CimInstance Win32_OperatingSystem).OperatingSystemSKU
+        if ($osSKU -in 100,101,121) {
+            Write-Warning "⚠️ Ваша версия Windows (Home) не поддерживает Hyper-V"
+            "Windows SKU неподдерживаемая" | Out-File $logPath -Append
+            return $false
+        }
+
+        # Проверка BIOS Virtualization
+        $sysInfo = systeminfo
+        if ($sysInfo -notmatch "Virtualization Enabled In Firmware:\\s*Yes" -or
+            $sysInfo -notmatch "Second Level Address Translation:\\s*Yes") {
+            Write-Warning "⚠️ Виртуализация или SLAT не включены в BIOS"
+            "BIOS virtualization OFF" | Out-File $logPath -Append
+            return $false
+        }
+
+        # Проверка и включение Hyper-V
+        $hvFeature = Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -ErrorAction SilentlyContinue
+        if ($null -eq $hvFeature) {
+            Write-Warning "❌ Не удалось получить состояние Hyper-V."
+            "Hyper-V feature info missing" | Out-File $logPath -Append
+            return $false
+        }
+
+        if ($hvFeature.State -ne "Enabled") {
+            Write-Host "🔧 Включаем Hyper-V..." -ForegroundColor Yellow
+            Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All -NoRestart | Out-Null
+            Write-Host "✅ Hyper-V включен. Перезагрузите ПК и запустите скрипт снова."
+            "Hyper-V enabled, reboot required" | Out-File $logPath -Append
+            return $false
+        }
+
+        Write-Host "✅ Hyper-V включен и готов." -ForegroundColor Green
+        "Hyper-V OK" | Out-File $logPath -Append
+        return $true
     }
-    $sysInfo = systeminfo
-    if ($sysInfo -notmatch "Virtualization Enabled In Firmware:\s*Yes" -or 
-        $sysInfo -notmatch "Second Level Address Translation:\s*Yes") {
-        Write-Error "Виртуализация или SLAT не включены. Включите их в BIOS."
-        exit 1
+    catch {
+        Write-Error "Ошибка при проверке Hyper-V: $($_.Exception.Message)"
+        $_.Exception | Out-File $logPath -Append
+        return $false
     }
-    $hvFeature = Get-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V
-    if ($hvFeature.State -ne "Enabled") {
-        Write-Host "Hyper-V не включен. Включаем..."
-        Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All -NoRestart | Out-Null
-        Write-Host "Hyper-V включен. Пожалуйста, перезагрузите компьютер и снова запустите скрипт."
-        exit 0
-    }
-    Write-Host "Hyper-V включен и готов."
 }
+
 
 # --- Section 2: System Info Detection ---
 function Get-SystemSpecs {
