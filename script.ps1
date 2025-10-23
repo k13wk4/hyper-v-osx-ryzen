@@ -246,7 +246,7 @@ function Remove-ResumeTask {
 function Ensure-Tools {
     Write-Status "[TOOLS] Проверяем git, python, 7zip..." Cyan
     try {
-        # winget check
+        # winget check (оставляем)
         $winget = Get-Command winget -ErrorAction SilentlyContinue
         if (-not $winget) {
             Write-Status "winget не найден. Пожалуйста, установите winget вручную и перезапустите скрипт." Red
@@ -266,11 +266,59 @@ function Ensure-Tools {
             Start-Sleep -Seconds 2
         } else { Write-Status "python: OK" Green }
 
-        if (-not (Get-Command 7z -ErrorAction SilentlyContinue)) {
-            Write-Status "7zip не найден. Попытка установить..." Yellow
-            winget install --id 7zip.7zip -e --source winget --silent | Out-Null
-            Start-Sleep -Seconds 2
-        } else { Write-Status "7zip: OK" Green }
+        # ИСПРАВЛЕННАЯ ПРОВЕРКА 7-ZIP
+        
+        # 1. Сначала проверяем, доступна ли команда 7z в PATH (как в оригинале)
+        if (Get-Command 7z -ErrorAction SilentlyContinue) {
+            Write-Status "7zip: OK" Green
+            # Если найдена, завершаем проверку 7-Zip
+        } else {
+            # Команда 7z НЕ найдена в PATH. Проверяем, установлен ли 7-Zip вообще.
+            
+            # Поиск пути установки 7-Zip через реестр
+            $7ZipEntry = Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\* | Where-Object { 
+                $_.DisplayName -like "7-Zip*" -and $_.InstallLocation 
+            } | Select-Object -First 1
+
+            if ($7ZipEntry) {
+                # 7-Zip установлен, но не в PATH. Добавляем путь.
+                $7ZipPath = $7ZipEntry.InstallLocation
+                Write-Status "7zip установлен, но не в PATH. Добавляем $7ZipPath в PATH..." Yellow
+                
+                # Добавление пути в пользовательскую PATH
+                $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+                if ($userPath -notlike "*$7ZipPath*") {
+                    $newPath = "$userPath;$7ZipPath"
+                    [Environment]::SetEnvironmentVariable("Path", $newPath, "User")
+                    Write-Status "7zip: Путь успешно добавлен в PATH (требуется перезапуск консоли)." Green
+                } else {
+                    Write-Status "7zip: Путь уже в PATH, но переменная не обновилась." Yellow
+                }
+                
+            } else {
+                # 7-Zip не установлен вообще. Запускаем установку.
+                Write-Status "7zip не найден. Попытка установить через winget..." Yellow
+                winget install --id 7zip.7zip -e --source winget --silent | Out-Null
+                Start-Sleep -Seconds 5 # Даем время на установку
+                
+                # Пробуем найти и добавить в PATH сразу после установки (хотя лучше перезапустить скрипт)
+                $7ZipPostInstallEntry = Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\* | Where-Object { 
+                    $_.DisplayName -like "7-Zip*" -and $_.InstallLocation 
+                } | Select-Object -First 1
+                
+                if ($7ZipPostInstallEntry) {
+                     $7ZipPath = $7ZipPostInstallEntry.InstallLocation
+                     $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+                     if ($userPath -notlike "*$7ZipPath*") {
+                        $newPath = "$userPath;$7ZipPath"
+                        [Environment]::SetEnvironmentVariable("Path", $newPath, "User")
+                        Write-Status "Установка завершена. Путь добавлен в PATH. Успешно!" Green
+                     }
+                } else {
+                    Write-Status "Установка 7zip завершена, но путь установки не найден." Red
+                }
+            }
+        }
 
         return $true
     } catch {
