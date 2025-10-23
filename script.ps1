@@ -361,33 +361,31 @@ function Choose-macOS {
         "12"    = @{ name="Monterey (12.x)";  minRam=8; recRam=8; recCores=2; disk=64 }
         "13"    = @{ name="Ventura (13.x)";   minRam=8; recRam=8; recCores=2; disk=64 }
         "14"    = @{ name="Sonoma (14.x)";    minRam=8; recRam=8; recCores=2; disk=64 }
-        "15"    = @{ name="Sequoia (15.x)";   minRam=8; recRam=8; recCores=2; disk=64 } # Добавлена Sequoia
-        "26"    = @{ name="Tahoe (26.x)";     minRam=8; recRam=16; recCores=4; disk=64 } # Добавлена Tahoe (26.x) с повышенными рек. требованиями
+        "15"    = @{ name="Sequoia (15.x)";   minRam=8; recRam=8; recCores=2; disk=64 } 
+        "26"    = @{ name="Tahoe (26.x)";     minRam=8; recRam=16; recCores=4; disk=64 } 
     }
 
-    # По умолчанию для выбора доступны все версии
     $supported = $all.Keys
 
     if ($cpuName -match "AMD") {
-        # Определяем рекомендованные (более стабильные) версии для AMD
         $recommendedKeys = @("10.15","11","12")
         Write-Status "[WARN] Обнаружен AMD процессор." Yellow
         Write-Status "[WARN] Для максимальной стабильности рекомендуется выбрать версии: $($recommendedKeys -join ', ')." Yellow
         Write-Status "[WARN] Новые версии могут работать, но требуют дополнительных патчей и более сложной настройки." Yellow
-        # $supported остается $all.Keys, чтобы пользователь мог выбрать любую версию
     }
     
     $i = 0; $menu = @()
-    # Цикл теперь всегда проходит по всем ключам, если $supported = $all.Keys
     foreach ($k in $supported) {
         $m = $all[$k]
         $tag = ""
-        # Добавляем метку "Рекомендовано" для AMD, если эта версия входит в рекомендованные
         if ($cpuName -match "AMD" -and $recommendedKeys -contains $k) {
              $tag = " [РЕКОМЕНДОВАНО AMD]"
         }
         
-        Write-Host ("[{0}] {1}{tag} — minRAM {2}GB, recRAM {3}GB, recCores {4}, disk {5}GB" -f $i, $m.name, $tag, $m.minRam, $m.recRam, $m.recCores, $m.disk)
+        # ИСПРАВЛЕНИЕ ОШИБКИ:
+        # {2} используется для $tag. Требования сдвигаются на {3}, {4}, {5}, {6}.
+        Write-Host ("[{0}] {1}{2} — minRAM {3}GB, recRAM {4}GB, recCores {5}, disk {6}GB" -f $i, $m.name, $tag, $m.minRam, $m.recRam, $m.recCores, $m.disk)
+        
         $menu += $k
         $i++
     }
