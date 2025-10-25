@@ -336,7 +336,7 @@ function Get-SystemSpecs {
     try {
         $cpu = Get-CimInstance Win32_Processor | Select-Object -First 1
         $name = $cpu.Name
-        $cores = $cpu.NumberOfLogicalProcessors
+        $cores = $cpu.NumberOfCores
         $ram = [math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB)
         $gpus = (Get-CimInstance Win32_VideoController | Select-Object -ExpandProperty Name) -join "; "
         Log "Specs: CPU=$name; Cores=$cores; RAM=${ram}GB; GPUs=$gpus"
@@ -360,10 +360,10 @@ function Choose-macOS {
         "10.15" = @{ name="Catalina (10.15)"; minRam=4; recRam=8; recCores=2; disk=64 }
         "11"    = @{ name="Big Sur (11.x)";   minRam=8; recRam=8; recCores=2; disk=64 }
         "12"    = @{ name="Monterey (12.x)";  minRam=8; recRam=8; recCores=2; disk=64 }
-        "13"    = @{ name="Ventura (13.x)";   minRam=8; recRam=8; recCores=2; disk=64 }
-        "14"    = @{ name="Sonoma (14.x)";    minRam=8; recRam=8; recCores=2; disk=64 }
-        "15"    = @{ name="Sequoia (15.x)";   minRam=8; recRam=8; recCores=2; disk=64 } 
-        "26"    = @{ name="Tahoe (26.x)";     minRam=8; recRam=16; recCores=4; disk=64 } 
+        "13"    = @{ name="Ventura (13.x)";   minRam=8; recRam=8; recCores=3; disk=64 }
+        "14"    = @{ name="Sonoma (14.x)";    minRam=8; recRam=8; recCores=4; disk=64 }
+        "15"    = @{ name="Sequoia (15.x)";   minRam=8; recRam=16; recCores=4; disk=90 } 
+        "26"    = @{ name="Tahoe (26.x)";     minRam=8; recRam=16; recCores=4; disk=128 } 
     }
 
     $supported = $all.Keys
